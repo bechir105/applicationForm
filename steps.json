@@ -1,0 +1,67 @@
+{
+  "steps": [
+    {
+      "stepId": 1,
+      "fields": [
+        {
+          "name": "companyName",
+          "type": "text",
+          "placeholder": "Company Name",
+          "validation": { "minLength": 8 }
+        },
+        {
+          "name": "includeSubForm",
+          "type": "checkbox",
+          "label": "Include Sub-Form"
+        }
+      ]
+    },
+    {
+      "stepId": 2,
+      "fields": [
+        {
+          "name": "firstName",
+          "type": "text",
+          "placeholder": "First Name",
+          "validation": { "required": true }
+        },
+        {
+          "name": "lastName",
+          "type": "text",
+          "placeholder": "Last Name",
+          "validation": { "required": true }
+        },
+        {
+          "name": "age",
+          "type": "int",
+          "placeholder": "Age",
+          "validation": { "required": true, "minValue": 18, "maxValue": 65 }
+        }
+      ]
+    },
+    {
+      "stepId": 3,
+      "fields": [
+        { "name": "dob", "type": "date", "label": "Date of Birth" },
+        {
+          "name": "insuranceNumber",
+          "type": "text",
+          "placeholder": "Health Insurance Number",
+          "validation": { "minLength": 8 }
+        },
+        {
+          "name": "position",
+          "type": "select",
+          "label": "Your Position at Work",
+          "options": [
+            { "value": "developer", "label": "Developer" },
+            { "value": "manager", "label": "Manager" },
+            { "value": "designer", "label": "Designer" },
+            { "value": "qa", "label": "Quality Assurance" }
+          ],
+          "validation": { "required": true }
+        }
+      ]
+    }
+  ]
+}

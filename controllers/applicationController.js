@@ -68,12 +68,112 @@ exports.createApplication = async (req, res) => {
 
 exports.getApplicationDetails = async (req, res) => {
   try {
-    const { userId, stepId } = req.params;
-    const application = await Application.findOne({ userId, stepId });
+    const { userId } = req.params; // Change: Removed stepId from params
+    const application = await Application.findOne({ userId }); // Change: Removed stepId from query
     if (!application) {
       return res.status(404).json({ msg: "Application not found" });
     }
     res.json(application);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Server error");
+  }
+};
+
+exports.saveProgress = async (req, res) => {
+  const { stepId, data } = req.body;
+  const userId = req.user.id;
+
+  try {
+    const filePath = path.join(__dirname, "../steps.json");
+    const formStructure = JSON.parse(fs.readFileSync(filePath, "utf8"));
+    const step = formStructure.steps.find((step) => step.stepId === stepId);
+    if (!step) {
+      console.log("Invalid step ID");
+      return res.status(400).json({ msg: "Invalid step ID" });
+    }
+
+    let errors = {};
+    step.fields.forEach((field) => {
+      const error = validateField(field, data[field.name]);
+      if (error) {
+        errors[field.name] = error;
+      }
+    });
+
+    if (Object.keys(errors).length > 0) {
+      console.log(errors);
+      return res.status(400).json({ errors });
+    }
+
+    // Check if the application already exists
+    let application = await Application.findOne({ userId });
+
+    if (!application) {
+      // Create a new application if it doesn't exist
+      application = new Application({
+        userId,
+        steps: [{ stepId, data }],
+        completed: false, // Initial state
+      });
+    } else {
+      // Update existing application
+      const stepIndex = application.steps.findIndex(
+        (step) => step.stepId === stepId
+      );
+
+      if (stepIndex !== -1) {
+        // Update existing step
+        application.steps[stepIndex].data = data;
+      } else {
+        // Add new step if it doesn't exist
+        application.steps.push({ stepId, data });
+      }
+
+      // Check if all steps are complete to mark the application as finished
+      if (stepId === "3" && !application.completed) {
+        application.completed = true;
+      }
+    }
+
+    // Save the application
+    await application.save();
+
+    // Include userId in the response
+    res.json({
+      userId: application.userId, // Ensure this is included
+      steps: application.steps,
+      completed: application.completed,
+    });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Server error");
+  }
+};
+exports.getApplicationProgress = async (req, res) => {
+  const userId = req.user.id;
+
+  try {
+    // Fetch the application based on userId
+    const application = await Application.findOne({ userId });
+
+    if (!application) {
+      return res.status(404).json({ msg: "Application not found" });
+    }
+
+    // Extract relevant progress information
+    const progress = {
+      steps: application.steps.map((step) => ({
+        stepId: step.stepId,
+        data: step.data,
+        completed:
+          step.stepId ===
+          application.steps[application.steps.length - 1].stepId,
+      })),
+      completed: application.completed,
+    };
+
+    res.json(progress);
   } catch (err) {
     console.error(err.message);
     res.status(500).send("Server error");
